@@ -118,6 +118,15 @@ private:
         }
     }
 
+    int maxDepth(Node* node) {
+        if (node == nullptr) {
+            return 0;
+        }
+        int leftDepth = maxDepth(node->left);
+        int rightDepth  = maxDepth(node->right);
+        return max(leftDepth, rightDepth) + 1;
+    }
+
 public:
     Tree() {
         head = nullptr;
@@ -133,8 +142,9 @@ public:
 
     void snake(Node* node) {
         Dlist<int> list;
+        int depth = maxDepth(head);
         
-        for (int i = 1; i < 4; i++) {
+        for (int i = 1; i <= depth; i++) {
             if (i % 2 == 0) {
                 getLeft(i, head, list);
             } else {
