@@ -1,0 +1,6 @@
+Weight: 100
+Speed:100
+Polojenie: 0
+Marka of car: Gelik
+Count of seats: 5
+Mashine has tone
