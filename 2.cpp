@@ -1,63 +1,57 @@
-#ifndef DLIDT_H
-#define DLIST_H
-
 #include <iostream>
+#include <chrono>
+#include <vector>
+#include <thread>
+#include <mutex>
 
 using namespace std;
 
-template <typename T>
-struct DNode {
-    T value;
-    DNode<T>* prev;
-    DNode<T>* next;
-    DNOde(const T& val): value(val), next(nullptr), prev(nullptr) {}
-};
+uint64_t globalSum = 0;
+mutex mtx;
 
-template <typename T>
-struct Dlist {
-private:
-    int len;
-public:
-    DNode<T>* head;
-    DNode<T>* tail;
+void partialSum(const vector<int>& data, int start, int end) {
+    uint64_t localSum = 0;
+    for (int i = start; i < end; i++) {
+        localSum += data[i];
+    }
+    lock_guard<mutex> lock(mtx);
+    globalSum += localSum;
 
-    Dlist() {
-        head = nullptr;
-        tail = nullptr;
-        len = 0;
+}
+
+int main() {
+    int dataSize = 10000000;
+    vector<int> data(dataSize, 1);
+
+    auto startTime = chrono::high_resolution_clock::now();
+    uint64_t singleSum = 0;
+    for(int val: data) {
+        singleSum += val;
+    }
+    auto endTime = chrono::high_resolution_clock::now();
+    auto singleTime = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+    cout << singleTime << " " << singleSum << endl;
+
+    int numThreads = 4;
+    int blockSize = dataSize / numThreads;
+    globalSum = 0;
+
+    vector<thread> threads(numThreads);
+    startTime = chrono::high_resolution_clock::now();
+
+    for(int i = 0; i < numThreads; i++) {
+        uint64_t start = i * blockSize;
+        uint64_t end = (i == numThreads - 1) ? dataSize : start + blockSize;
+
+        threads[i] = thread(partialSum, ref(data), start, end);
     }
 
-    int size() const {
-        return len;
+    for(auto& t : threads) {
+        t.join();
     }
+    endTime = chrono::high_resolution_clock::now();
+    auto multiTime = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+    cout << multiTime << " " << globalSum << endl;
 
-    void pushback(T value) {
-        DNode<T>* node = new DNode<T>(value);
-        if (head == nullptr) {
-            head = node;
-            tail = node;
-        } else {
-            tail->next = node;
-            node->prev = tail;
-            tail = node;
-        }
-        len++;
-    }
-
-    void removeForward() {
-        if (head == nullptr) {
-            throw runtime_error("empty");
-        }
-        DNode<T>* oldhead = head;
-        head = head->next;
-        if (head != nullpt) {
-            head->prev = nullptr;
-        } else {
-            tail = nullptr;
-        }
-        delete oldhead;
-        len--;
-    }
-};
-
-#endif
+    return 0;
+}
